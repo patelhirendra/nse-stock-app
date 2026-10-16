@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSE Stock Circuit & Target Calculator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0;
+            padding: 40px 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            background: #ffffff;
+            width: 100%;
+            max-width: 480px;
+            padding: 28px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+        }
+
+        h2 {
+            margin: 0 0 8px 0;
+            font-size: 1.5rem;
+            color: #1e293b;
+        }
+
+        .subtitle {
+            font-size: 0.88rem;
+            color: #64748b;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #334155;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: #2563eb;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            background-color: #2563eb;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+        }
+
+        button:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            display: none;
+            background-color: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 18px;
+            font-size: 0.9rem;
+        }
+
+        .result-card {
+            display: none;
+            margin-top: 24px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 0.95rem;
+            border-bottom: 1px dashed #f1f5f9;
+        }
+
+        .row-label {
+            color: #64748b;
+        }
+
+        .row-value {
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .live-price {
+            color: #0284c7;
+        }
+
+        .target-box {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 18px;
+            text-align: center;
+        }
+
+        .target-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #15803d;
+            margin-bottom: 4px;
+        }
+
+        .target-price {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #166534;
+        }
+
+        .warning-badge {
+            display: none;
+            background-color: #fffbeb;
+            color: #b45309;
+            border: 1px solid #fde68a;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-top: 14px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>NSE Stock Calculator</h2>
+        <div class="subtitle">Official circuit limits & target price projector</div>
+
+        <div class="form-group">
+            <label for="ticker">NSE Stock Symbol</label>
+            <input type="text" id="ticker" placeholder="e.g. RELIANCE, TCS, INFY" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+            <label for="percentage">Target Rise (%)</label>
+            <input type="number" id="percentage" step="0.01" placeholder="e.g. 3.5">
+        </div>
+
+        <button id="calcBtn" onclick="calculatePrice()">Calculate</button>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <div id="resultCard" class="result-card">
+            <div class="row">
+                <span class="row-label">Stock Ticker:</span>
+                <span class="row-value" id="displayTicker">--</span>
+            </div>
+            <div class="row">
+                <span class="row-label">Previous Close:</span>
+                <span class="row-value">₹<span id="prevClose">0.00</span></span>
+            </div>
+            <div class="row">
+                <span class="row-label">Live Current Price:</span>
+                <span class="row-value live-price">₹<span id="currentPrice">0.00</span></span>
+            </div>
+            <div class="row">
+                <span class="row-label">Official Upper Circuit:</span>
+                <span class="row-value">₹<span id="upperCircuit">0.00</span></span>
+            </div>
+            <div class="row">
+                <span class="row-label">Official Lower Circuit:</span>
+                <span class="row-value">₹<span id="lowerCircuit">0.00</span></span>
+            </div>
+
+            <div class="target-box">
+                <div class="target-title">Target Price (+<span id="displayPercent">0</span>%)</div>
+                <div class="target-price">₹<span id="targetPrice">0.00</span></div>
+            </div>
+
+            <div id="circuitWarning" class="warning-badge">
+                ⚠️ <strong>Circuit Breaker Notice:</strong> The calculated target price exceeds today's official upper circuit limit. The stock cannot trade above this ceiling for the day.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function calculatePrice() {
+            const tickerInput = document.getElementById('ticker');
+            const percentageInput = document.getElementById('percentage');
+            const calcBtn = document.getElementById('calcBtn');
+            const errorDiv = document.getElementById('errorMessage');
+            const resultCard = document.getElementById('resultCard');
+            const circuitWarning = document.getElementById('circuitWarning');
+
+            const ticker = tickerInput.value.trim().toUpperCase().replace(".NS", "");
+            const percentage = parseFloat(percentageInput.value);
+
+            // Reset error and hide result
+            errorDiv.style.display = 'none';
+            errorDiv.innerText = '';
+
+            if (!ticker) {
+                showError("Please enter an NSE symbol.");
+                return;
+            }
+
+            if (isNaN(percentage)) {
+                showError("Please enter a valid percentage value.");
+                return;
+            }
+
+            // UI feedback during fetch
+            calcBtn.disabled = true;
+            calcBtn.innerText = "Fetching from NSE...";
+
+            try {
+                // Hits the Vercel serverless function at /api/get_stock_data
+                const response = await fetch(`/api/get_stock_data?ticker=${encodeURIComponent(ticker)}`);
+                const data = await response.json();
+
+                if (!response.ok || data.error) {
+                    showError(data.error || "Failed to fetch stock details. Please check the symbol.");
+                    resultCard.style.display = 'none';
+                    return;
+                }
+
+                const prevClose = Number(data.previous_close);
+                const currentPrice = Number(data.current_price);
+                const upperCircuit = Number(data.upper_circuit);
+                const lowerCircuit = Number(data.lower_circuit);
+
+                // Calculate target price based on previous close
+                const targetPrice = prevClose * (1 + (percentage / 100));
+
+                // Populate UI
+                document.getElementById('displayTicker').innerText = data.ticker;
+                document.getElementById('prevClose').innerText = prevClose.toFixed(2);
+                document.getElementById('currentPrice').innerText = currentPrice.toFixed(2);
+                document.getElementById('upperCircuit').innerText = upperCircuit.toFixed(2);
+                document.getElementById('lowerCircuit').innerText = lowerCircuit.toFixed(2);
+                document.getElementById('displayPercent').innerText = percentage;
+                document.getElementById('targetPrice').innerText = targetPrice.toFixed(2);
+
+                // Show upper circuit alert if price breaches limit
+                if (targetPrice > upperCircuit) {
+                    circuitWarning.style.display = 'block';
+                } else {
+                    circuitWarning.style.display = 'none';
+                }
+
+                resultCard.style.display = 'block';
+
+            } catch (err) {
+                showError("Network error: Unable to reach the serverless backend.");
+                resultCard.style.display = 'none';
+            } finally {
+                calcBtn.disabled = false;
+                calcBtn.innerText = "Calculate";
+            }
+        }
+
+        function showError(msg
