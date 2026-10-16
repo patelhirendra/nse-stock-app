@@ -259,7 +259,7 @@
             fetchStatus.innerText = `Fetching quotes for ${symbol}...`;
 
             try {
-                const response = await fetch(`/api/get_stock_data?ticker=${encodeURIComponent(symbol)}`);
+                const response = await fetch(`/api/get_stock_data.js?ticker=${encodeURIComponent(symbol)}`);
                 const data = await response.json();
 
                 if (!response.ok || data.error) {
